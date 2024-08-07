@@ -1,8 +1,7 @@
-import asyncio
 import datetime
 from sqlalchemy import Integer, String, Float, ForeignKey, Date, func, select
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import mapped_column, relationship, declarative_base
+from sqlalchemy.ext.asyncio import AsyncSession
 
 Base = declarative_base()
 

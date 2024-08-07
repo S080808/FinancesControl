@@ -34,7 +34,6 @@ async def main() -> None:
 
         new_transaction = await db_manager.set_transaction(saving_wallet, 100.0, datetime.date(2010, 10, 10), '123')
 
-        # Refresh transaction to get user and wallet relationships
         await session.refresh(new_transaction)
 
         assert (new_transaction.user.user_id == 123)
