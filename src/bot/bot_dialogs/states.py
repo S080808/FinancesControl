@@ -7,3 +7,6 @@ class Main(StatesGroup):
 
 class MyWallets(StatesGroup):
     PAGINATED = State()
+    SHOWING = State()
+    EDITING = State()
+    DELETING = State()

@@ -1,27 +1,46 @@
 from aiogram_dialog import Dialog, Window, DialogManager, LaunchMode
 from aiogram_dialog.widgets.kbd import Start
 from aiogram_dialog.widgets.text import Jinja, Const
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.database.models import User, Wallet, RegularWallet, SavingWallet
 
 from . import states
 
 async def getter(dialog_manager: DialogManager, **kwargs):
+    session: AsyncSession = dialog_manager.middleware_data["session"]
+    event = dialog_manager.event
+
+    # user = User(id=1089328715)
+    # user.wallets.append(RegularWallet(name='Cash', currency='$', balance=0.0, user_id=user.id))
+    # session.add(user)
+    # await session.commit()
+
+    user: User = await User.get_by_id(session, event.from_user.id)
+    wallets = user.wallets[0:3]
+
+    wallets_info = []
+    for wallet in wallets:
+        wallets_info.append(vars(wallet))
+
+    print(wallets_info)
     total_balance = format(0.0, '.2f')
-    wallets_info = [
-        {
-            'name': 'Мой кошелек 1',
-            'balance': 100.0,
-            'type': 'regular_wallet',
-            'goal_balance': None,
-            'interest_rate': None
-        },
-        {
-            'name': 'Мой кошелек 2',
-            'balance': 1000.0,
-            'type': 'saving_wallet',
-            'goal_balance': '10000.0',
-            'interest_rate': '5%'
-        }
-    ]
+    # wallets_info = [
+    #     {
+    #         'name': 'Мой кошелек 1',
+    #         'balance': 100.0,
+    #         'type': 'regular_wallet',
+    #         'goal_balance': None,
+    #         'interest_rate': None
+    #     },
+    #     {
+    #         'name': 'Мой кошелек 2',
+    #         'balance': 1000.0,
+    #         'type': 'saving_wallet',
+    #         'goal_balance': '10000.0',
+    #         'interest_rate': '5%'
+    #     }
+    # ]
     transactions_info = [
         {
             'amount': 100.0,
@@ -53,10 +72,10 @@ main_dialog = Dialog(
 {% else %}
      ├── 🧩 Type: {{ wallet.type }}
 {% endif %}
-{% if wallet.goal_balance is not none %}
+{% if 'goal_balance' in wallet %}
      ├── 🎯 Goal: ${{ wallet.goal_balance }}
 {% endif %}
-{% if wallet.interest_rate is not none %}
+{% if 'interest_rate' in wallet %}
      └── 📈 Interest rate: {{ wallet.interest_rate }}
 {% endif %}
 
