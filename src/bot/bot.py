@@ -14,8 +14,7 @@ dialog_router = Router()
 # dialog_router.include_routers()
 
 
-
-def setup_dispatcher() -> Dispatcher:
+def setup_dispatcher(session_maker: async_sessionmaker) -> Dispatcher:
     storage = MemoryStorage()
 
     dp = Dispatcher(storage=storage)
