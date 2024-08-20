@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import logging
 import asyncio
@@ -23,9 +24,11 @@ async def main() -> None:
 
     async with session_maker() as session:
         user = User(id=123)
-        user.wallets.append(SavingWallet(id=1, name='234', currency='$', type='saving_wallet', balance=0.0))
+        user.wallets.append(SavingWallet(name='123', currency='$', balance=0.0, type='saving_wallet', goal_date=datetime.today()))
         session.add(user)
         await session.commit()
+
+        print(user.wallets)
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)

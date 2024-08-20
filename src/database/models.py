@@ -3,13 +3,10 @@ from __future__ import annotations
 import datetime
 from typing import List
 
-from sqlalchemy import func, select
-from sqlalchemy import Integer, String, Float, ForeignKey, Date, CHAR
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, declarative_base, mapped_column, Mapped
-from sqlalchemy.ext.asyncio import AsyncSession
 
 Base = declarative_base()
-
 
 class User(Base):
     __tablename__ = 'user_table'
@@ -25,7 +22,7 @@ class User(Base):
 class Wallet(Base):
     __tablename__ = 'wallets_table'
 
-    id: Mapped[int] = mapped_column(primary_key=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(nullable=False)
     currency: Mapped[str] = mapped_column(nullable=False)
     balance: Mapped[float] = mapped_column(default=0.0)
@@ -40,7 +37,8 @@ class Wallet(Base):
     }
 
     def __repr__(self):
-        return f"Address(id={self.id!r}, user_id={self.user_id!r})"
+        return (f"Wallet(id={self.id!r}, name={self.name!r}, currency={self.currency!r}, "
+                f"balance={self.balance!r}, type={self.type}, user_id={self.user_id!r})")
 
 
 class RegularWallet(Wallet):
@@ -57,8 +55,15 @@ class SavingWallet(Wallet):
     __tablename__ = 'saving_wallets_table'
 
     id: Mapped[int] = mapped_column(ForeignKey("wallets_table.id"), primary_key=True)
+    initial_balance: Mapped[float] = mapped_column(default=0.0)
     goal_balance: Mapped[float] = mapped_column(default=0.0)
+    goal_date: Mapped[datetime.datetime] = mapped_column(nullable=False)
 
     __mapper_args__ = {
         "polymorphic_identity": "saving_wallet",
     }
+
+    def __repr__(self):
+        return (f"SavingWallet(id={self.id!r}, name={self.name!r}, currency={self.currency!r}, "
+                f"balance={self.balance!r}, type={self.type}, user_id={self.user_id!r}, "
+                f"goal_balance={self.goal_balance!r}, goal_date={self.goal_date.strftime('%d %B, %Y')})")
