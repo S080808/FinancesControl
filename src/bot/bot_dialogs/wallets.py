@@ -1,15 +1,17 @@
 import operator
-from typing import Dict, Any
+from typing import Any
 
 from aiogram.types import CallbackQuery
-from aiogram_dialog import Window, SubManager, DialogManager, Dialog
-from aiogram_dialog.widgets.common import ManagedScroll
-from aiogram_dialog.widgets.kbd import ScrollingGroup, ListGroup, Checkbox, Row, Button, ManagedCheckbox, Group, Radio, \
-    Select, Multiselect, SwitchTo, Column, ManagedRadio, Back, Start, Next
+from aiogram_dialog import Window, DialogManager, Dialog, LaunchMode
+from aiogram_dialog.widgets.kbd import ScrollingGroup, Row, Button, Select, SwitchTo, Back
 from aiogram_dialog.widgets.text import Const, Format, Jinja
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
-from .common import MAIN_MENU_BUTTON
 from . import states
+from .session import session_maker
+from .common import MAIN_MENU_BUTTON
+from ...database.models import User, Wallet
+
 
 async def product_getter(dialog_manager: DialogManager, **kwargs):
     return {
@@ -30,14 +32,14 @@ wallets_paginated = Window(
     Const("Scrolling group with default pager (legacy mode)"),
     ScrollingGroup(
         Select(
-            text=Format("{item[text]}"),
+            text=Format("👜 {item[name]}"),
             items="products",
             item_id_getter=operator.itemgetter('id'),
             id="lg",
             on_click=on_item_selected,
         ),
         id="sg",
-        width=1,
+        width=2,
         height=5,
     ),
     MAIN_MENU_BUTTON,
@@ -48,16 +50,14 @@ wallets_paginated = Window(
 )
 
 async def get_selected(dialog_manager: DialogManager, **kwargs):
+    selected = dialog_manager.dialog_data["selected"]
+    session = dialog_manager.dialog_data["session"]
+
+    wallet = await Wallet.get_by_id(session, selected)
+    print(wallet)
     return {
-        "selected": dialog_manager.dialog_data["selected"],
-        "wallet": {
-            'name': 'Мой кошелек 1',
-            'balance': 100.0,
-            'type': 'regular_wallet',
-            'initial_balance': None,
-            'goal_balance': None,
-            'interest_rate': None
-        }
+        "selected": selected,
+        "wallet": vars(wallet)
     }
 
 async def on_delete_clicked(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
@@ -74,13 +74,13 @@ show_wallet = Window(
 {% else %}
      ├── 🧩 Type: {{ wallet.type }}
 {% endif %}
-{% if wallet.initial_balance is not none %}
+{% if 'initial_balance' in wallet %}
      ├── 🎇 Initial: ${{ wallet.initial_balance }}
 {% endif %}
-{% if wallet.goal_balance is not none %}
+{% if 'goal_balance' in wallet %}
      ├── 🎯 Goal: ${{ wallet.goal_balance }}
 {% endif %}
-{% if wallet.interest_rate is not none %}
+{% if 'interest_rate' in wallet %}
      └── 📈 Interest rate: {{ wallet.interest_rate }}
 {% endif %}
 </code></pre>
@@ -104,12 +104,18 @@ edit_wallet = Window(
 )
 
 async def on_start(start_data: Any, dialog_manager: DialogManager):
-    dialog_manager.dialog_data["products"] = [{'text': f"Product {i}", 'id': i} for i in range(1, 30)]
+    async with session_maker() as session:
+        dialog_manager.dialog_data["session"] = session
+        user = await User.get_by_id(session, dialog_manager.event.from_user.id)
+        wallets = [vars(wallet) for wallet in user.wallets]
+        print(wallets)
 
+        dialog_manager.dialog_data["products"] = [{'name': '123', 'type': 'regular_wallet', 'initial_balance': 0.0, 'id': 1}]
 
 wallets_dialog = Dialog(
     wallets_paginated,
     show_wallet,
     edit_wallet,
-    on_start=on_start
+    on_start=on_start,
+    launch_mode=LaunchMode.SINGLE_TOP
 )

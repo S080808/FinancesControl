@@ -1,14 +1,21 @@
+import os
+from typing import Any
+
 from aiogram_dialog import Dialog, Window, DialogManager, LaunchMode
 from aiogram_dialog.widgets.kbd import Start
 from aiogram_dialog.widgets.text import Jinja, Const
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
 from src.database.models import User, Wallet, RegularWallet, SavingWallet
 
 from . import states
+from .session import session_maker
 
 async def getter(dialog_manager: DialogManager, **kwargs):
-    session: AsyncSession = dialog_manager.middleware_data["session"]
+    session: AsyncSession = dialog_manager.dialog_data["session"]
+    # session: AsyncSession = kwargs["session"]
+    print(*kwargs)
+
     event = dialog_manager.event
 
     # user = User(id=1089328715)
@@ -56,6 +63,10 @@ async def getter(dialog_manager: DialogManager, **kwargs):
         'transactions_info': transactions_info
     }
 
+async def on_start(start_data: Any, dialog_manager: DialogManager):
+    async with session_maker() as session:
+        dialog_manager.dialog_data["session"] = session
+
 main_dialog = Dialog(
     Window(
         Jinja("""
@@ -78,7 +89,6 @@ main_dialog = Dialog(
 {% if 'interest_rate' in wallet %}
      └── 📈 Interest rate: {{ wallet.interest_rate }}
 {% endif %}
-
         {% endfor %}
         </code></pre>
         <pre><code class="language-🧾 Recent transactions:">
@@ -98,11 +108,12 @@ main_dialog = Dialog(
         Start(
             text=Const('My wallets'),
             id="my_wallets",
-            state=states.MyWallets.PAGINATED
+            state=states.MyWallets.PAGINATED,
         ),
         parse_mode="HTML",
         state=states.Main.MAIN,
         getter=getter
     ),
-    launch_mode=LaunchMode.ROOT
+    launch_mode=LaunchMode.ROOT,
+    on_start=on_start
 )
