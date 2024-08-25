@@ -22,7 +22,7 @@ async def main() -> None:
         await conn.run_sync(Base.metadata.create_all)
 
     bot = Bot(token=bot_token)
-    dp = setup_dispatcher(session_maker)
+    dp = setup_dispatcher()
 
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
